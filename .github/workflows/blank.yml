@@ -1,0 +1,57 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: macos-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo runners
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+  
+            curl -s -o login.sh -L "https://raw.githubusercontent.com/JohnnyNetsec/github-vm/main/mac/login.sh"
+            #disable spotlight indexing
+            sudo mdutil -i off -a
+            #Create new account
+            sudo dscl . -create /Users/runneradmin
+            sudo dscl . -create /Users/runneradmin UserShell /bin/bash
+            sudo dscl . -create /Users/runneradmin RealName Runner_Admin
+            sudo dscl . -create /Users/runneradmin UniqueID 1001
+            sudo dscl . -create /Users/runneradmin PrimaryGroupID 80
+            sudo dscl . -create /Users/runneradmin NFSHomeDirectory /Users/tcv
+            sudo dscl . -passwd /Users/runneradmin P@ssw0rd!
+            sudo dscl . -passwd /Users/runneradmin P@ssw0rd!
+            sudo createhomedir -c -u runneradmin > /dev/null
+            sudo dscl . -append /Groups/admin GroupMembership runneradmin
+            #Enable VNC
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -configure -allowAccessFor -allUsers -privs -all
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -configure -clientopts -setvnclegacy -vnclegacy yes 
+            echo runnerrdp | perl -we 'BEGIN { @k = unpack "C*", pack "H*", "1734516E8BA8C5E2FF1C39567390ADCA"}; $_ = <>; chomp; s/^(.{8}).*/$1/; @p = unpack "C*", $_; foreach (@k) { printf "%02X", $_ ^ (shift @p || 0) }; print "\n"' | sudo tee /Library/Preferences/com.apple.VNCSettings.txt
+            #Start VNC/reset changes
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent -console
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate
+            ssh -o StrictHostKeyChecking=no -R 44757:localhost:5900 serveo.net
